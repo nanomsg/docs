@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="nanomsg is the home of the Scalability Protocols: simple, interoperable messaging patterns for distributed systems.">
+  <title>nanomsg — Scalability Protocols</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="wordmark" href="#top" aria-label="nanomsg home">nanomsg<span>.</span></a>
+    <nav aria-label="Primary navigation">
+      <a href="#protocols">Protocols</a>
+      <a href="#implementations">Implementations</a>
+      <a href="https://github.com/nanomsg">Source</a>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-heading">
+      <div class="hero-copy">
+        <p class="eyebrow">The Scalability Protocols</p>
+        <h1 id="hero-heading">Patterns for programs that need to talk.</h1>
+        <p class="lede">nanomsg is a family of lightweight messaging protocols for building distributed systems. Start with the communication pattern you need; choose the implementation that fits your language.</p>
+        <div class="actions">
+          <a class="button button-primary" href="#implementations">Choose an implementation</a>
+          <a class="button button-quiet" href="#protocols">Explore protocols <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="orb orb-one"></div><div class="orb orb-two"></div><div class="orb orb-three"></div>
+        <svg viewBox="0 0 420 320" role="presentation">
+          <path d="M72 210 L174 104 L317 157 L236 246 Z" />
+          <path d="M174 104 L236 246" />
+          <path d="M72 210 L317 157" />
+          <circle cx="72" cy="210" r="14" /><circle cx="174" cy="104" r="14" /><circle cx="317" cy="157" r="14" /><circle cx="236" cy="246" r="14" />
+        </svg>
+      </div>
+    </section>
+
+    <section class="protocols section" id="protocols" aria-labelledby="protocol-heading">
+      <div class="section-intro">
+        <p class="eyebrow">Protocol first</p>
+        <h2 id="protocol-heading">A small vocabulary for distributed systems.</h2>
+        <p>Each protocol describes how peers exchange messages. Implementations share this model, letting you make a deliberate choice about language, API, and lifecycle without losing sight of the topology.</p>
+      </div>
+      <div class="protocol-grid">
+        <article><span>01</span><h3>PAIR</h3><p>Direct one-to-one communication between two peers.</p></article>
+        <article><span>02</span><h3>PUB / SUB</h3><p>Publish messages to every interested subscriber.</p></article>
+        <article><span>03</span><h3>REQ / REP</h3><p>Route requests to services and receive replies.</p></article>
+        <article><span>04</span><h3>PUSH / PULL</h3><p>Distribute work and aggregate messages.</p></article>
+        <article><span>05</span><h3>BUS</h3><p>Exchange messages in a simple many-to-many mesh.</p></article>
+        <article><span>06</span><h3>SURVEYOR / RESPONDENT</h3><p>Ask many peers a question and collect their answers.</p></article>
+      </div>
+    </section>
+
+    <section class="implementations section" id="implementations" aria-labelledby="implementation-heading">
+      <div class="section-intro">
+        <p class="eyebrow">Choose your implementation</p>
+        <h2 id="implementation-heading">One protocol family, clear paths forward.</h2>
+      </div>
+      <div class="implementation-grid">
+        <article class="implementation featured">
+          <p class="tag">Preferred for C</p>
+          <h3>NNG</h3>
+          <p>A modern C implementation with an updated API, broad transport support, and compatibility help for existing nanomsg applications.</p>
+          <a href="https://nng.nanomsg.org/">Read the NNG documentation <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="implementation">
+          <p class="tag">Preferred pure Go implementation</p>
+          <h3>mangos</h3>
+          <p>A native Go implementation of the protocol family, built for Go applications rather than as a wrapper around a C library.</p>
+          <a href="https://pkg.go.dev/go.nanomsg.org/mangos/v3">Read the Go API documentation <span aria-hidden="true">→</span></a>
+        </article>
+        <article class="implementation legacy">
+          <p class="tag">Legacy C API</p>
+          <h3>libnanomsg</h3>
+          <p>The original C implementation. It remains available for existing applications and the language bindings built around its stable API.</p>
+          <a href="https://lib.nanomsg.org/">Browse the legacy documentation <span aria-hidden="true">→</span></a>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing section">
+      <p class="eyebrow">Open source</p>
+      <h2>Build the shape of communication your system needs.</h2>
+      <a class="button button-primary" href="https://github.com/nanomsg">Visit nanomsg on GitHub</a>
+    </section>
+  </main>
+
+  <footer>
+    <a class="wordmark" href="#top">nanomsg<span>.</span></a>
+    <p>Scalability Protocols for distributed systems.</p>
+    <p><a href="https://github.com/nanomsg">GitHub</a> · <a href="https://nng.nanomsg.org/">NNG</a> · <a href="https://github.com/nanomsg/mangos">mangos</a> · <a href="https://lib.nanomsg.org/">libnanomsg</a></p>
+  </footer>
+</body>
+</html>
