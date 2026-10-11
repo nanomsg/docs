@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SURVEYOR / RESPONDENT — Everybody Votes · libnanomsg getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nanomsg">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a aria-current="page" href="./">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="libnanomsg pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">libnanomsg pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/survey.svg" alt=""><figcaption id="libnanomsg-survey-caption">survey communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_survey_everybody_votes">Survey (Everybody Votes)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The surveyor pattern is used to send a timed survey out, responses
+are individually returned until the survey has expired.  This pattern
+is useful for service discovery and voting algorithms.</p>
+</div>
+<div class="listingblock">
+<div class="title">survey.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;nanomsg/nn.h&gt;
+#include &lt;nanomsg/survey.h&gt;
+
+#define SERVER "server"
+#define CLIENT "client"
+#define DATE   "DATE"
+
+void
+fatal(const char *func)
+{
+        fprintf(stderr, "%s: %s\n", func, nn_strerror(nn_errno()));
+        exit(1);
+}
+
+char *
+date(void)
+{
+        time_t now = time(&amp;now);
+        struct tm *info = localtime(&amp;now);
+        char *text = asctime(info);
+        text[strlen(text)-1] = '\0'; // remove '\n'
+        return (text);
+}
+
+int
+server(const char *url)
+{
+        int sock;
+
+        if ((sock = nn_socket (AF_SP, NN_SURVEYOR)) &lt; 0) {
+                fatal("nn_socket");
+        }
+        if (nn_bind(sock, url)  &lt; 0) {
+                fatal("nn_bind");
+        }
+        for (;;) {
+                printf("SERVER: SENDING DATE SURVEY REQUEST\n");
+                int bytes = nn_send(sock, DATE, strlen(DATE) + 1, 0);
+                if (bytes &lt; 0) {
+                        fatal("nn_send");
+                }
+
+                for (;;) {
+                        char *buf = NULL;
+                        int bytes = nn_recv(sock, &amp;buf, NN_MSG, 0);
+                        if (bytes &lt; 0) {
+                                if (nn_errno() == ETIMEDOUT) {
+                                        break;
+                                }
+                                fatal("nn_recv");
+                        }
+                        printf("SERVER: RECEIVED \"%s\" SURVEY RESPONSE\n",
+                            buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                        nn_freemsg(buf);
+                }
+
+                printf("SERVER: SURVEY COMPLETE\n");
+                sleep(1); // Start another survey in a second
+        }
+}
+
+int
+client(const char *url, const char *name)
+{
+        int sock;
+
+        if ((sock = nn_socket(AF_SP, NN_RESPONDENT)) &lt; 0) {
+                fatal("nn_socket");
+        }
+        if (nn_connect (sock, url) &lt; 0) {
+                fatal("nn_connect");
+        }
+            for (;;) {
+                char *buf = NULL;
+                int bytes = nn_recv(sock, &amp;buf, NN_MSG, 0);
+                if (bytes &gt;= 0) {
+                        printf("CLIENT (%s): RECEIVED \"%s\" SURVEY REQUEST\n",
+                            name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                        nn_freemsg(buf);
+                        char *d = date();
+                        int sz_d = strlen(d) + 1; // '\0' too
+                        printf("CLIENT (%s): SENDING DATE SURVEY RESPONSE\n",
+                           name);
+                        if (nn_send(sock, d, sz_d, 0) &lt; 0) {
+                                fatal("nn_send");
+                        }
+                }
+        }
+}
+
+int
+main(const int argc, const char **argv)
+{
+        if ((argc &gt;= 2) &amp;&amp; (strcmp(SERVER, argv[1]) == 0))
+                return (server(argv[2]));
+
+        if ((argc &gt;= 3) &amp;&amp; (strcmp(CLIENT, argv[1]) == 0))
+                return (client(argv[2], argv[3]));
+
+        fprintf(stderr, "Usage: survey %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n",
+            SERVER, CLIENT);
+        return 1;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc survey.c -lnanomosg -o survey</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./survey server ipc:///tmp/survey.ipc &amp; server=$!
+./survey client ipc:///tmp/survey.ipc client0 &amp; client0=$!
+./survey client ipc:///tmp/survey.ipc client1 &amp; client1=$!
+./survey client ipc:///tmp/survey.ipc client2 &amp; client2=$!
+sleep 4 <i class="conum" data-value="1"></i><b>(1)</b>
+kill $server $client0 $client1 $client2</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>The first survey times out with no responders because the clients aren’t started yet.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>SERVER: SENDING DATE SURVEY REQUEST
+SERVER: SURVEY COMPLETE
+SERVER: SENDING DATE SURVEY REQUEST
+CLIENT (client2): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client1): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client0): RECEIVED "DATE" SURVEY REQUEST
+CLIENT (client1): SENDING DATE SURVEY RESPONSE
+CLIENT (client0): SENDING DATE SURVEY RESPONSE
+CLIENT (client2): SENDING DATE SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: RECEIVED "Mon Jan  8 13:10:43 2018" SURVEY RESPONSE
+SERVER: SURVEY COMPLETE</pre>
+</div>
+</div>
+</div>
+</div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">libnanomsg guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

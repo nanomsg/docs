@@ -22,6 +22,7 @@
     <nav aria-label="Primary navigation">
       <a href="#protocols">Protocols</a>
       <a href="#implementations">Implementations</a>
+      <a href="getting-started/">Get started</a>
       <a href="https://github.com/nanomsg">Source</a>
     </nav>
   </header>
@@ -33,7 +34,7 @@
         <h1 id="hero-heading">Patterns for programs that need to talk.</h1>
         <p class="lede">nanomsg is a family of lightweight messaging protocols for building distributed systems. Start with the communication pattern you need; choose the implementation that fits your language.</p>
         <div class="actions">
-          <a class="button button-primary" href="#implementations">Choose an implementation</a>
+          <a class="button button-primary" href="getting-started/">Get started</a>
           <a class="button button-quiet" href="#protocols">Explore protocols <span aria-hidden="true">↓</span></a>
         </div>
       </div>
@@ -55,12 +56,12 @@
         <p>Each protocol describes how peers exchange messages. Implementations share this model, letting you make a deliberate choice about language, API, and lifecycle without losing sight of the topology.</p>
       </div>
       <div class="protocol-grid">
-        <article><span>01</span><h3>PAIR</h3><p>Direct one-to-one communication between two peers.</p></article>
-        <article><span>02</span><h3>PUB / SUB</h3><p>Publish messages to every interested subscriber.</p></article>
-        <article><span>03</span><h3>REQ / REP</h3><p>Route requests to services and receive replies.</p></article>
-        <article><span>04</span><h3>PUSH / PULL</h3><p>Distribute work and aggregate messages.</p></article>
-        <article><span>05</span><h3>BUS</h3><p>Exchange messages in a simple many-to-many mesh.</p></article>
-        <article><span>06</span><h3>SURVEYOR / RESPONDENT</h3><p>Ask many peers a question and collect their answers.</p></article>
+        <a class="protocol-card" href="getting-started/nng/pair.html"><span>01</span><h3>PAIR</h3><p>Direct one-to-one communication between two peers.</p></a>
+        <a class="protocol-card" href="getting-started/nng/pubsub.html"><span>02</span><h3>PUB / SUB</h3><p>Publish messages to every interested subscriber.</p></a>
+        <a class="protocol-card" href="getting-started/nng/reqrep.html"><span>03</span><h3>REQ / REP</h3><p>Route requests to services and receive replies.</p></a>
+        <a class="protocol-card" href="getting-started/nng/pipeline.html"><span>04</span><h3>PUSH / PULL</h3><p>Distribute work and aggregate messages.</p></a>
+        <a class="protocol-card" href="getting-started/nng/bus.html"><span>05</span><h3>BUS</h3><p>Exchange messages in a simple many-to-many mesh.</p></a>
+        <a class="protocol-card" href="getting-started/nng/survey.html"><span>06</span><h3>SURVEYOR / RESPONDENT</h3><p>Ask many peers a question and collect their answers.</p></a>
       </div>
     </section>
 
@@ -74,19 +75,19 @@
           <p class="tag">Preferred for C</p>
           <h3>NNG</h3>
           <p>A modern C implementation with an updated API, broad transport support, and compatibility help for existing nanomsg applications.</p>
-          <a href="https://nng.nanomsg.org/">Read the NNG documentation <span aria-hidden="true">→</span></a>
+          <a href="getting-started/nng/">Start with NNG <span aria-hidden="true">→</span></a>
         </article>
         <article class="implementation">
           <p class="tag">Preferred pure Go implementation</p>
           <h3>mangos</h3>
           <p>A native Go implementation of the protocol family, built for Go applications rather than as a wrapper around a C library.</p>
-          <a href="https://pkg.go.dev/go.nanomsg.org/mangos/v3">Read the Go API documentation <span aria-hidden="true">→</span></a>
+          <a href="getting-started/mangos/">Start with mangos <span aria-hidden="true">→</span></a>
         </article>
         <article class="implementation legacy">
           <p class="tag">Legacy C API</p>
           <h3>libnanomsg</h3>
           <p>The original C implementation. It remains available for existing applications and the language bindings built around its stable API.</p>
-          <a href="https://lib.nanomsg.org/">Browse the legacy documentation <span aria-hidden="true">→</span></a>
+          <a href="getting-started/libnanomsg/">Start with libnanomsg <span aria-hidden="true">→</span></a>
         </article>
       </div>
     </section>
@@ -105,7 +106,7 @@
       </svg>
     </a>
     <p>Scalability Protocols for distributed systems.</p>
-    <p><a href="https://github.com/nanomsg">GitHub</a> · <a href="https://nng.nanomsg.org/">NNG</a> · <a href="https://github.com/nanomsg/mangos">mangos</a> · <a href="https://lib.nanomsg.org/">libnanomsg</a></p>
+    <p><a href="https://github.com/nanomsg">GitHub</a> · <a href="getting-started/nng/">NNG</a> · <a href="getting-started/mangos/">mangos</a> · <a href="getting-started/libnanomsg/">libnanomsg</a></p>
   </footer>
 </body>
 </html>

@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REQ / REP — I Ask, You Answer · NNG getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a aria-current="page" href="./">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="NNG pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">NNG pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/reqrep.svg" alt=""><figcaption id="nng-reqrep-caption">reqrep communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_requestreply_i_ask_you_answer">Request/Reply (I ask, you answer)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Request/Reply is used for synchronous communications where each question
+is responded with a single answer, for example remote procedure calls (RPCs).
+Like <a href="pipeline.html">Pipeline</a>, it also can perform load-balancing.  This
+is the only reliable messaging pattern in the suite, as it automatically
+will retry if a request is not matched with a response.</p>
+</div>
+<div class="listingblock">
+<div class="title">reqprep.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdlib.h&gt;
+#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+#include &lt;time.h&gt;
+
+#include &lt;nng/nng.h&gt;
+
+static int
+nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
+{
+        nng_msg *msg = NULL;
+        int rv;
+        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != 0) return rv;
+        *size = nng_msg_len(msg);
+        if ((*buf = nng_alloc(*size)) == NULL) { nng_msg_free(msg); return NNG_ENOMEM; }
+        memcpy(*buf, nng_msg_body(msg), *size);
+        nng_msg_free(msg);
+        return 0;
+}
+#define nng_recv_alloc(sock, buf, size) nng_recv_alloc_((sock), (void **)(buf), (size))
+
+#define NODE0 "node0"
+#define NODE1 "node1"
+#define DATE "DATE"
+
+void
+fatal(const char *func, int rv)
+{
+        fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
+        exit(1);
+}
+
+char *
+date(void)
+{
+        time_t now = time(&amp;now);
+        struct tm *info = localtime(&amp;now);
+        char *text = asctime(info);
+        text[strlen(text)-1] = '\0'; // remove '\n'
+        return (text);
+}
+
+int
+node0(const char *url)
+{
+        nng_socket sock;
+        int rv;
+
+        if ((rv = nng_rep0_open(&amp;sock)) != 0) {
+                fatal("nng_rep0_open", rv);
+        }
+          if ((rv = nng_listen(sock, url, NULL, 0)) != 0) {
+                fatal("nng_listen", rv);
+        }
+        for (;;) {
+                char *buf = NULL;
+		size_t sz;
+                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != 0) {
+                        fatal("nng_recv", rv);
+                }
+                if ((sz == (strlen(DATE) + 1)) &amp;&amp; (strcmp(DATE, buf) == 0)) {
+                        printf("NODE0: RECEIVED DATE REQUEST\n");
+                        char *d = date();
+                        printf("NODE0: SENDING DATE %s\n", d);
+                        if ((rv = nng_send(sock, d, strlen(d) + 1, 0)) != 0) {
+                                fatal("nng_send", rv);
+                        }
+                }
+		nng_free(buf, sz);
+        }
+}
+
+int
+node1(const char *url)
+{
+        nng_socket sock;
+        int rv;
+	size_t sz;
+        char *buf = NULL;
+
+        if ((rv = nng_req0_open(&amp;sock)) != 0) {
+                fatal("nng_socket", rv);
+        }
+        if ((rv = nng_dial(sock, url, NULL, 0)) != 0) {
+                fatal("nng_dial", rv);
+        }
+        printf("NODE1: SENDING DATE REQUEST %s\n", DATE);
+        if ((rv = nng_send(sock, DATE, strlen(DATE)+1, 0)) != 0) {
+                fatal("nng_send", rv);
+        }
+        if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != 0) {
+                fatal("nng_recv", rv);
+        }
+        printf("NODE1: RECEIVED DATE %s\n", buf);  <i class="conum" data-value="1"></i><b>(1)</b>
+        nng_free(buf, sz);
+        nng_socket_close(sock);
+	return (0);
+}
+
+int
+main(const int argc, const char **argv)
+{
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE0, argv[1]) == 0))
+                return (node0(argv[2]));
+
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE1, argv[1]) == 0))
+                return (node1(argv[2]));
+
+      fprintf(stderr, "Usage: reqrep %s|%s &lt;URL&gt; ...\n", NODE0, NODE1);
+      return (1);
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc reqrep.c -lnng -o reqrep</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./reqrep node0 ipc:///tmp/reqrep.ipc &amp; node0=$! &amp;&amp; sleep 1
+./reqrep node1 ipc:///tmp/reqrep.ipc
+kill $node0</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>NODE1: SENDING DATE REQUEST DATE
+NODE0: RECEIVED DATE REQUEST
+NODE0: SENDING DATE Tue Jan  9 09:17:02 2018
+NODE1: RECEIVED DATE Tue Jan  9 09:17:02 2018</pre>
+</div>
+</div>
+</div>
+</div>
+      <div class="notice"><p>This migrated example has been checked against NNG main. It uses the current socket API and receives messages through <code>nng_recvmsg</code>; the original <code>NNG_FLAG_ALLOC</code> form is no longer available.</p></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">NNG guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

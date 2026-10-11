@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BUS — Routing · libnanomsg getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nanomsg">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a aria-current="page" href="./">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="libnanomsg pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">libnanomsg pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/bus.svg" alt=""><figcaption id="libnanomsg-bus-caption">bus communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_bus_routing">Bus (Routing)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The bus protocol is useful for routing applications, or for building
+fully interconnected mesh networks.  In this pattern, messages are
+sent to every directly connected peer.</p>
+</div>
+<div class="listingblock">
+<div class="title">bus.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;nanomsg/nn.h&gt;
+#include &lt;nanomsg/bus.h&gt;
+
+void
+fatal(const char *func)
+{
+        fprintf(stderr, "%s: %s\n", func, nn_strerror(nn_errno()));
+        exit(1);
+}
+
+int
+node(const int argc, const char **argv)
+{
+        int sock;
+
+        if ((sock = nn_socket (AF_SP, NN_BUS)) &lt; 0) {
+                fatal("nn_socket");
+        }
+          if (nn_bind(sock, argv[2]) &lt; 0) {
+                fatal("nn_bind");
+        }
+
+        sleep(1); // wait for peers to bind
+        if (argc &gt;= 3) {
+                for (int x = 3; x &lt; argc; x++) {
+                        if (nn_connect(sock, argv[x]) &lt; 0) {
+                                fatal("nn_connect");
+                        }
+                }
+        }
+        sleep(1); // wait for connections
+        int to = 100;
+        if (nn_setsockopt(sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to,
+            sizeof (to)) &lt; 0) {
+                fatal("nn_setsockopt");
+        }
+
+        // SEND
+        int sz_n = strlen(argv[1]) + 1; // '\0' too
+        printf("%s: SENDING '%s' ONTO BUS\n", argv[1], argv[1]);
+        if (nn_send(sock, argv[1], sz_n, 0) &lt; 0) {
+                fatal("nn_send");
+        }
+
+        // RECV
+        for (;;) {
+                char *buf = NULL;
+                int recv = nn_recv(sock, &amp;buf, NN_MSG, 0);
+                if (recv &gt;= 0) {
+                        printf("%s: RECEIVED '%s' FROM BUS\n", argv[1], buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                        nn_freemsg(buf);
+                }
+        }
+        return (nn_shutdown(sock, 0));
+}
+
+int
+main(int argc, const char **argv)
+{
+        if (argc &gt;= 3) {
+                return (node(argc, argv));
+        }
+        fprintf(stderr, "Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...\n");
+        return 1;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc bus.c -lnanomsg -o bus</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./bus node0 ipc:///tmp/node0.ipc ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc &amp; node0=$!
+./bus node1 ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node1=$!
+./bus node2 ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node2=$!
+./bus node3 ipc:///tmp/node3.ipc ipc:///tmp/node0.ipc &amp; node3=$!
+sleep 5
+kill $node0 $node1 $node2 $node3</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>node0: SENDING 'node0' ONTO BUS
+node1: SENDING 'node1' ONTO BUS
+node2: SENDING 'node2' ONTO BUS
+node3: SENDING 'node3' ONTO BUS
+node0: RECEIVED 'node1' FROM BUS
+node0: RECEIVED 'node2' FROM BUS
+node0: RECEIVED 'node3' FROM BUS
+node1: RECEIVED 'node0' FROM BUS
+node1: RECEIVED 'node2' FROM BUS
+node1: RECEIVED 'node3' FROM BUS
+node2: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node1' FROM BUS
+node2: RECEIVED 'node3' FROM BUS
+node3: RECEIVED 'node0' FROM BUS
+node3: RECEIVED 'node1' FROM BUS
+node3: RECEIVED 'node2' FROM BUS</pre>
+</div>
+</div>
+</div>
+</div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">libnanomsg guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

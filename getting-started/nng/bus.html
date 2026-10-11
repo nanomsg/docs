@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BUS — Routing · NNG getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a aria-current="page" href="./">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="NNG pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">NNG pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/bus.svg" alt=""><figcaption id="nng-bus-caption">bus communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_bus_routing">Bus (Routing)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The bus protocol is useful for routing applications, or for building
+fully interconnected mesh networks.  In this pattern, messages are
+sent to every directly connected peer.</p>
+</div>
+<div class="listingblock">
+<div class="title">bus.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;nng/nng.h&gt;
+
+static int
+nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
+{
+        nng_msg *msg = NULL;
+        int rv;
+        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != 0) return rv;
+        *size = nng_msg_len(msg);
+        if ((*buf = nng_alloc(*size)) == NULL) { nng_msg_free(msg); return NNG_ENOMEM; }
+        memcpy(*buf, nng_msg_body(msg), *size);
+        nng_msg_free(msg);
+        return 0;
+}
+#define nng_recv_alloc(sock, buf, size) nng_recv_alloc_((sock), (void **)(buf), (size))
+
+void
+fatal(const char *func, int rv)
+{
+        fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
+        exit(1);
+}
+
+int
+node(int argc, char **argv)
+{
+        nng_socket sock;
+	int rv;
+	size_t sz;
+
+        if ((rv = nng_bus0_open(&amp;sock)) != 0) {
+                fatal("nng_bus0_open", rv);
+        }
+	if ((rv = nng_listen(sock, argv[2], NULL, 0)) != 0) {
+                fatal("nng_listen", rv);
+        }
+
+        sleep(1); // wait for peers to bind
+        if (argc &gt;= 3) {
+                for (int x = 3; x &lt; argc; x++) {
+                        if ((rv = nng_dial(sock, argv[x], NULL, 0)) != 0) {
+                                fatal("nng_dial", rv);
+                        }
+                }
+        }
+
+	sleep(1); // wait for connects to establish
+
+        // SEND
+        sz = strlen(argv[1]) + 1; // '\0' too
+        printf("%s: SENDING '%s' ONTO BUS\n", argv[1], argv[1]);
+        if ((rv = nng_send(sock, argv[1], sz, 0)) != 0) {
+                fatal("nng_send", rv);
+        }
+
+        // RECV
+        for (;;) {
+                char *buf = NULL;
+		size_t sz;
+                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) !=0) {
+			if (rv == NNG_ETIMEDOUT) {
+				fatal("nng_recv", rv);
+			}
+		}
+		printf("%s: RECEIVED '%s' FROM BUS\n", argv[1], buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                nng_free(buf, sz);
+        }
+        nng_socket_close(sock);
+	return (0);
+}
+
+int
+main(int argc, char **argv)
+{
+        if (argc &gt;= 3) {
+                return (node(argc, argv));
+        }
+        fprintf(stderr, "Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...\n");
+        return 1;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc bus.c -lnng -o bus</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./bus node0 ipc:///tmp/node0.ipc ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc &amp; node0=$!
+./bus node1 ipc:///tmp/node1.ipc ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node1=$!
+./bus node2 ipc:///tmp/node2.ipc ipc:///tmp/node3.ipc &amp; node2=$!
+./bus node3 ipc:///tmp/node3.ipc ipc:///tmp/node0.ipc &amp; node3=$!
+sleep 5
+kill $node0 $node1 $node2 $node3</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>node3: SENDING 'node3' ONTO BUS
+node0: SENDING 'node0' ONTO BUS
+node1: SENDING 'node1' ONTO BUS
+node2: SENDING 'node2' ONTO BUS
+node0: RECEIVED 'node1' FROM BUS
+node1: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node0' FROM BUS
+node3: RECEIVED 'node1' FROM BUS
+node0: RECEIVED 'node2' FROM BUS
+node1: RECEIVED 'node2' FROM BUS
+node3: RECEIVED 'node2' FROM BUS
+node0: RECEIVED 'node3' FROM BUS
+node2: RECEIVED 'node3' FROM BUS
+node1: RECEIVED 'node3' FROM BUS
+node3: RECEIVED 'node0' FROM BUS
+node2: RECEIVED 'node1' FROM BUS</pre>
+</div>
+</div>
+</div>
+</div>
+      <div class="notice"><p>This migrated example has been checked against NNG main. It uses the current socket API and receives messages through <code>nng_recvmsg</code>; the original <code>NNG_FLAG_ALLOC</code> form is no longer available.</p></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">NNG guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>
