@@ -83,7 +83,11 @@ if __name__ == "__main__":
     main()
       </code></pre></div></div>
       <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
-python pair0.py
+python -m pip install pynng
+
+# Run these in separate terminals.
+python pair0.py node0 ipc:///tmp/pair0_example
+python pair0.py node1 ipc:///tmp/pair0_example
       </code></pre></div></div>
     </article>
   </main>
