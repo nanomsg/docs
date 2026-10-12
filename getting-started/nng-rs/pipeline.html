@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PUSH / PULL — One-Way Pipe · nng-rs / Rust getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pipeline.rs">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a aria-current="page" href="../nng-rs/">nng-rs / Rust</a><a href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">nng-rs / Rust pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pipeline.svg" alt=""><figcaption>pipeline communication topology</figcaption></figure>
+      <h2>PUSH / PULL — One-Way Pipe</h2>
+      <p>PUSH / PULL distributes independent work from senders to receivers.</p>
+      <div class="notice"><p>nng-rs is an independently maintained Rust binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pipeline.rs">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">pipeline.rs</div><div class="content"><pre class="highlight"><code class="language-rust" data-lang="rust">
+//! Pipeline (one-way pipe) example.
+//!
+//! This pattern is useful for solving producer/consumer problems, including load-balancing.
+//! Messages flow from the push side to the pull side. If multiple peers are connected, the pattern
+//! attempts to distribute them fairly.
+//!
+//! This example was derived from [this NNG example][1].
+//!
+//! [1]: https://nanomsg.org/gettingstarted/nng/pipeline.html
+use nng::{Error, Protocol, Socket};
+use std::{env, process, str, thread, time::Duration};
+
+/// Entry point of the application.
+pub fn main() -&gt; Result&lt;(), Error&gt; {
+    let args: Vec&lt;_&gt; = env::args().take(4).collect();
+
+    match &amp;args[..] {
+        [_, t, url] if t == "pull" =&gt; pull(url),
+        [_, t, url, arg] if t == "push" =&gt; push(url, arg),
+        _ =&gt; {
+            println!("Usage: pipeline pull|push &lt;URL&gt; &lt;ARG&gt; ...");
+            process::exit(1);
+        }
+    }
+}
+
+/// Pull socket.
+fn pull(url: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Pull0)?;
+    s.listen(url)?;
+
+    loop {
+        let msg = s.recv()?;
+        let arg = str::from_utf8(&amp;msg).expect("message has invalid UTF-8");
+
+        println!("PULL: RECEIVED \"{}\"", arg);
+    }
+}
+
+/// Push socket.
+fn push(url: &amp;str, arg: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Push0)?;
+    s.dial(url)?;
+
+    println!("PUSH: SENDING \"{}\"", arg);
+    s.send(arg.as_bytes())?;
+
+    // Wait for messages to flush before shutting down.
+    thread::sleep(Duration::from_secs(1));
+    Ok(())
+}
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+# Set up once.
+git clone --recurse-submodules https://github.com/nanomsg/nng-rs.git
+cd nng-rs
+
+# Run these in separate terminals from the checkout.
+cargo run -p nng --example pipeline -- pull tcp://127.0.0.1:6003
+cargo run -p nng --example pipeline -- push tcp://127.0.0.1:6003 hello
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">nng-rs / Rust guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

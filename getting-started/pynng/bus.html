@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BUS — Routing · pynng / Python getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/codypiersall/pynng/blob/master/examples/bus.py">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a href="../nng-rs/">nng-rs / Rust</a><a aria-current="page" href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">pynng / Python pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/bus.svg" alt=""><figcaption>bus communication topology</figcaption></figure>
+      <h2>BUS — Routing</h2>
+      <p>BUS lets peers exchange messages in a simple mesh.</p>
+      <div class="notice"><p>pynng is an independently maintained Python binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/codypiersall/pynng/blob/master/examples/bus.py">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">bus.py</div><div class="content"><pre class="highlight"><code class="language-python" data-lang="python">
+"""
+The bus protocol is useful for routing applications, or for building fully interconnected mesh networks.
+In this pattern, messages are sent to every directly connected peer.
+"""
+
+import pynng
+import trio
+
+trio = trio
+
+
+async def node(name, listen_address, contacts):
+    with pynng.Bus0(listen=listen_address, recv_timeout=300) as sock:
+        await trio.sleep(0.2)  #  wait for peers to bind
+        for contact in contacts:
+            sock.dial(contact)
+
+        await trio.sleep(0.2)
+        # wait for connects to establish
+        print(f"{name}: SENDING '{listen_address}' ONTO BUS")
+        await sock.asend(listen_address.encode())
+
+        while True:
+            try:
+                msg = await sock.arecv_msg()
+                print(f'{name}: RECEIVED "{msg.bytes.decode()}" FROM BUS')
+            except pynng.Timeout:
+                print(f"{name}: Timeout")
+                break
+
+
+async def main():
+    async with trio.open_nursery() as nursery:
+        nursery.start_soon(
+            node,
+            "node0",
+            "ipc:///tmp/node0.ipc",
+            ["ipc:///tmp/node1.ipc", "ipc:///tmp/node2.ipc"],
+        )
+        nursery.start_soon(
+            node,
+            "node1",
+            "ipc:///tmp/node1.ipc",
+            ["ipc:///tmp/node2.ipc", "ipc:///tmp/node3.ipc"],
+        )
+        nursery.start_soon(
+            node,
+            "node2",
+            "ipc:///tmp/node2.ipc",
+            ["ipc:///tmp/node3.ipc"],
+        )
+        nursery.start_soon(
+            node,
+            "node3",
+            "ipc:///tmp/node3.ipc",
+            ["ipc:///tmp/node0.ipc"],
+        )
+
+
+if __name__ == "__main__":
+    try:
+        trio.run(main)
+    except KeyboardInterrupt:
+        # that's the way the program *should* end
+        pass
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+python -m pip install pynng trio
+python bus.py
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">pynng / Python guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

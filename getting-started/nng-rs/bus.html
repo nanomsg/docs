@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BUS — Routing · nng-rs / Rust getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/bus.rs">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a aria-current="page" href="../nng-rs/">nng-rs / Rust</a><a href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">nng-rs / Rust pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/bus.svg" alt=""><figcaption>bus communication topology</figcaption></figure>
+      <h2>BUS — Routing</h2>
+      <p>BUS lets peers exchange messages in a simple mesh.</p>
+      <div class="notice"><p>nng-rs is an independently maintained Rust binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This guide is based on the project’s default-branch example, with the peer list corrected so a node does not dial its own listener. See the <a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/bus.rs">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">bus.rs</div><div class="content"><pre class="highlight"><code class="language-rust" data-lang="rust">
+//! Bus (routing) example.
+//!
+//! The bus protocol is useful for routing applications or for building fully interconnected mesh
+//! networks. In this pattern, messages are sent to every directly connected peer.
+//!
+//! This example was derived from [this NNG example][1].
+//!
+//! [1]: https://nanomsg.org/gettingstarted/nng/bus.html
+use nng::{Error, Protocol, Socket};
+use std::{env, process, str, thread, time::Duration};
+
+/// Entry point of the application
+fn main() -&gt; Result&lt;(), Error&gt; {
+    let args: Vec&lt;_&gt; = env::args().collect();
+
+    if args.len() &lt; 3 {
+        println!("Usage: bus &lt;NODE_NAME&gt; &lt;URL&gt; &lt;URL&gt; ...");
+        process::exit(1);
+    }
+
+    node(&amp;args[1], &amp;args[2], &amp;args[3..])
+}
+
+/// Bus node.
+fn node(name: &amp;str, listen: &amp;str, dial: &amp;[String]) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Bus0)?;
+    s.listen(listen)?;
+
+    // Give time for peers to bind.
+    thread::sleep(Duration::from_secs(1));
+    for peer in dial {
+        s.dial(peer)?;
+    }
+
+    // SEND
+    println!("{0}: SENDING \"{0}\" ONTO BUS", name);
+    s.send(name.as_bytes())?;
+
+    // RECV
+    loop {
+        let msg = s.recv()?;
+        let peer = str::from_utf8(&amp;msg).expect("invalid UTF-8");
+
+        println!("{}: RECEIVED \"{}\" FROM BUS", name, peer);
+    }
+}
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+# Set up once.
+git clone --recurse-submodules https://github.com/nanomsg/nng-rs.git
+cd nng-rs
+
+# Run these in separate terminals from the checkout.
+cargo run -p nng --example bus -- node0 tcp://127.0.0.1:6000 tcp://127.0.0.1:6001
+cargo run -p nng --example bus -- node1 tcp://127.0.0.1:6001 tcp://127.0.0.1:6000
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">nng-rs / Rust guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>
