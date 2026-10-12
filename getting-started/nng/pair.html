@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAIR — Two Way Radio · NNG getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a aria-current="page" href="./">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="NNG pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">NNG pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pair.svg" alt=""><figcaption id="nng-pair-caption">pair communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_pair_two_way_radio">Pair (Two Way Radio)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pair pattern is used when there a one-to-one peer relationship.
+Only one peer may be connected to another peer at a time, but both
+may speak freely.</p>
+</div>
+<div class="listingblock">
+<div class="title">pair.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;nng/nng.h&gt;
+
+static int
+nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
+{
+        nng_msg *msg = NULL;
+        int rv;
+        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != 0) return rv;
+        *size = nng_msg_len(msg);
+        if ((*buf = nng_alloc(*size)) == NULL) { nng_msg_free(msg); return NNG_ENOMEM; }
+        memcpy(*buf, nng_msg_body(msg), *size);
+        nng_msg_free(msg);
+        return 0;
+}
+#define nng_recv_alloc(sock, buf, size) nng_recv_alloc_((sock), (void **)(buf), (size))
+
+#define NODE0 "node0"
+#define NODE1 "node1"
+
+void
+fatal(const char *func, int rv)
+{
+        fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
+        exit(1);
+}
+
+int
+send_name(nng_socket sock, char *name)
+{
+	int rv;
+        printf("%s: SENDING \"%s\"\n", name, name);
+	if ((rv = nng_send(sock, name, strlen(name) + 1, 0)) != 0) {
+		fatal("nng_send", rv);
+	}
+	return (rv);
+}
+
+int
+recv_name(nng_socket sock, char *name)
+{
+        char *buf = NULL;
+	int rv;
+	size_t sz;
+        if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) == 0) {
+		printf("%s: RECEIVED \"%s\"\n", name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+		nng_free(buf, sz);
+	}
+        return (rv);
+}
+
+int
+send_recv(nng_socket sock, char *name)
+{
+	int rv;
+	if ((rv = nng_socket_set_ms(sock, NNG_OPT_RECVTIMEO, 100)) != 0) {
+		fatal("nng_socket_set_ms", rv);
+	}
+        for (;;) {
+                recv_name(sock, name);
+                sleep(1);
+                send_name(sock, name);
+        }
+}
+
+int
+node0(const char *url)
+{
+        nng_socket sock;
+	int rv;
+        if ((rv = nng_pair0_open(&amp;sock)) != 0) {
+                fatal("nng_pair0_open", rv);
+        }
+         if ((rv = nng_listen(sock, url, NULL, 0)) !=0) {
+                fatal("nng_listen", rv);
+        }
+        return (send_recv(sock, NODE0));
+}
+
+int
+node1(const char *url)
+{
+        nng_socket sock;
+	int rv;
+	sleep(1);
+        if ((rv = nng_pair0_open(&amp;sock)) != 0) {
+                fatal("nng_pair0_open", rv);
+        }
+        if ((rv = nng_dial(sock, url, NULL, 0)) != 0) {
+                fatal("nng_dial", rv);
+        }
+        return (send_recv(sock, NODE1));
+}
+
+int
+main(int argc, char **argv)
+{
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE0, argv[1]) == 0))
+                return (node0(argv[2]));
+
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE1, argv[1]) == 0))
+                return (node1(argv[2]));
+
+        fprintf(stderr, "Usage: pair %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n", NODE0, NODE1);
+        return 1;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc pair.c -lnng -o pair</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./pair node0 ipc:///tmp/pair.ipc &amp; node0=$!
+./pair node1 ipc:///tmp/pair.ipc &amp; node1=$!
+sleep 3
+kill $node0 $node1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>node0: SENDING "node0"
+node1: RECEIVED "node0"
+node1: SENDING "node1"
+node0: SENDING "node0"
+node0: RECEIVED "node1"
+node1: RECEIVED "node0"</pre>
+</div>
+</div>
+</div>
+</div>
+      <div class="notice"><p>This migrated example has been checked against NNG main. It uses the current socket API and receives messages through <code>nng_recvmsg</code>; the original <code>NNG_FLAG_ALLOC</code> form is no longer available.</p></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">NNG guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

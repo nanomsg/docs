@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAIR — Two Way Radio · libnanomsg getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nanomsg">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a aria-current="page" href="./">libnanomsg / C</a></nav>
+    <nav class="pattern-nav" aria-label="libnanomsg pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">libnanomsg pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pair.svg" alt=""><figcaption id="libnanomsg-pair-caption">pair communication topology</figcaption></figure>
+<div class="sect1">
+<h2 id="_pair_two_way_radio">Pair (Two Way Radio)</h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>The pair pattern is used when there a one-to-one peer relationship.
+Only one peer may be connected to another peer at a time, but both
+may speak freely.</p>
+</div>
+<div class="listingblock">
+<div class="title">pair.c</div>
+<div class="content">
+<pre class="highlight"><code class="language-c" data-lang="c">#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;
+#include &lt;string.h&gt;
+#include &lt;unistd.h&gt;
+
+#include &lt;nanomsg/nn.h&gt;
+#include &lt;nanomsg/pair.h&gt;
+
+#define NODE0 "node0"
+#define NODE1 "node1"
+
+void
+fatal(const char *func)
+{
+        fprintf(stderr, "%s: %s\n", func, nn_strerror(nn_errno()));
+        exit(1);
+}
+
+int
+send_name(int sock, const char *name)
+{
+        printf("%s: SENDING \"%s\"\n", name, name);
+        int sz_n = strlen(name) + 1; // '\0' too
+        return (nn_send(sock, name, sz_n, 0));
+}
+
+int
+recv_name(int sock, const char *name)
+{
+        char *buf = NULL;
+        int result = nn_recv(sock, &amp;buf, NN_MSG, 0);
+        if (result &gt; 0) {
+                printf("%s: RECEIVED \"%s\"\n", name, buf); <i class="conum" data-value="1"></i><b>(1)</b>
+                nn_freemsg(buf);
+        }
+        return (result);
+}
+
+int
+send_recv(int sock, const char *name)
+{
+        int to = 100;
+        if (nn_setsockopt(sock, NN_SOL_SOCKET, NN_RCVTIMEO, &amp;to,
+            sizeof (to)) &lt; 0) {
+                fatal("nn_setsockopt");
+        }
+
+        for (;;) {
+                recv_name(sock, name);
+                sleep(1);
+                send_name(sock, name);
+        }
+}
+
+int
+node0(const char *url)
+{
+        int sock;
+        if ((sock = nn_socket(AF_SP, NN_PAIR)) &lt; 0) {
+                fatal("nn_socket");
+        }
+         if (nn_bind(sock, url) &lt; 0) {
+                fatal("nn_bind");
+        }
+        return (send_recv(sock, NODE0));
+}
+
+int
+node1(const char *url)
+{
+        int sock;
+        if ((sock = nn_socket(AF_SP, NN_PAIR)) &lt; 0) {
+                fatal("nn_socket");
+        }
+        if (nn_connect(sock, url) &lt; 0) {
+                fatal("nn_connect");
+        }
+        return (send_recv(sock, NODE1));
+}
+
+int
+main(const int argc, const char **argv)
+{
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE0, argv[1]) == 0))
+                return (node0(argv[2]));
+
+        if ((argc &gt; 1) &amp;&amp; (strcmp(NODE1, argv[1]) == 0))
+                return (node1(argv[2]));
+
+        fprintf(stderr, "Usage: pair %s|%s &lt;URL&gt; &lt;ARG&gt; ...\n", NODE0, NODE1);
+        return 1;
+}</code></pre>
+</div>
+</div>
+<div class="colist arabic">
+<table>
+<tr>
+<td><i class="conum" data-value="1"></i><b>1</b></td>
+<td>Blithely assumes message is ASCIIZ string. Real code should check it.</td>
+</tr>
+</table>
+</div>
+<div class="listingblock">
+<div class="title">Compilation</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">gcc pair.c -lnanomsg -o pair</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Execution</div>
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">./pair node0 ipc:///tmp/pair.ipc &amp; node0=$!
+./pair node1 ipc:///tmp/pair.ipc &amp; node1=$!
+sleep 3
+kill $node0 $node1</code></pre>
+</div>
+</div>
+<div class="listingblock">
+<div class="title">Output</div>
+<div class="content">
+<pre>node0: SENDING "node0"
+node1: SENDING "node1"
+node1: RECEIVED"node0"
+node0: SENDING "node0"
+node0: RECEIVED"node1"</pre>
+</div>
+</div>
+</div>
+</div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">libnanomsg guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>
