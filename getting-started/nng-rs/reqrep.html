@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>REQ / REP — I Ask, You Answer · nng-rs / Rust getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/reqrep.rs">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a aria-current="page" href="../nng-rs/">nng-rs / Rust</a><a href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">nng-rs / Rust pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/reqrep.svg" alt=""><figcaption>reqrep communication topology</figcaption></figure>
+      <h2>REQ / REP — I Ask, You Answer</h2>
+      <p>REQ / REP pairs a request with the response from a service.</p>
+      <div class="notice"><p>nng-rs is an independently maintained Rust binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/reqrep.rs">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">reqrep.rs</div><div class="content"><pre class="highlight"><code class="language-rust" data-lang="rust">
+//! Request/Reply (I ask, you answer) example.
+//!
+//! Request/Reply is used for synchronous communication where each question if responded with a
+//! single answer, for example remote procedure calls (RPCs). Like Pipeline, it can also perform
+//! load-balancing. This is the only reliable messaging patter in the suite, as it automatically
+//! will retry if a request is not matched with a response.
+//!
+//! This example was derived from [this NNG example][1].
+//!
+//! [1]: https://nanomsg.org/gettingstarted/nng/reqrep.html
+use nng::{Error, Protocol, Socket};
+use std::{convert::TryInto, env, process, time::SystemTime};
+
+/// Message representing a date request
+const DATE_REQUEST: u64 = 1;
+
+/// Entry point of the application
+fn main() -&gt; Result&lt;(), Error&gt; {
+    // Begin by parsing the arguments to gather whether this is the request or
+    // the reply and what URL to connect with.
+    let args: Vec&lt;_&gt; = env::args().take(3).collect();
+
+    match &amp;args[..] {
+        [_, t, url] if t == "req" =&gt; request(url),
+        [_, t, url] if t == "rep" =&gt; reply(url),
+        _ =&gt; {
+            println!("Usage: reqrep req|rep &lt;URL&gt;");
+            process::exit(1);
+        }
+    }
+}
+
+/// Run the request portion of the program.
+fn request(url: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Req0)?;
+    s.dial(url)?;
+
+    println!("REQUEST: SENDING DATE REQUEST");
+    s.send(DATE_REQUEST.to_le_bytes())?;
+
+    println!("REQUEST: WAITING FOR RESPONSE");
+    let msg = s.recv()?;
+    let epoch = u64::from_le_bytes(msg[..].try_into().unwrap());
+
+    println!("REQUEST: UNIX EPOCH WAS {} SECONDS AGO", epoch);
+
+    Ok(())
+}
+
+/// Run the reply portion of the program.
+fn reply(url: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Rep0)?;
+    s.listen(url)?;
+
+    loop {
+        println!("REPLY: WAITING FOR COMMAND");
+        let mut msg = s.recv()?;
+
+        let cmd = u64::from_le_bytes(msg[..].try_into().unwrap());
+        if cmd != DATE_REQUEST {
+            println!("REPLY: UNKNOWN COMMAND");
+            continue;
+        }
+
+        println!("REPLY: RECEIVED DATE REQUEST");
+        let rep = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .expect("current system time is before Unix epoch")
+            .as_secs();
+
+        msg.clear();
+        msg.push_back(&amp;rep.to_le_bytes());
+
+        println!("REPLY: SENDING {}", rep);
+        s.send(msg)?;
+    }
+}
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+cargo run --example reqrep
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">nng-rs / Rust guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

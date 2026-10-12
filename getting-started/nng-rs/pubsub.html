@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PUB / SUB — Topics and Broadcast · nng-rs / Rust getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pubsub.rs">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a aria-current="page" href="../nng-rs/">nng-rs / Rust</a><a href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">nng-rs / Rust pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pubsub.svg" alt=""><figcaption>pubsub communication topology</figcaption></figure>
+      <h2>PUB / SUB — Topics and Broadcast</h2>
+      <p>PUB / SUB broadcasts messages, while subscribers choose the topics they receive.</p>
+      <div class="notice"><p>nng-rs is an independently maintained Rust binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pubsub.rs">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">pubsub.rs</div><div class="content"><pre class="highlight"><code class="language-rust" data-lang="rust">
+//! Pub/Sub (topics &amp; broadcast) example.
+//!
+//! This pattern is used to allow a single broadcaster to publish messages to many subscribers,
+//! which may choose to limit which messages they receive.
+use nng::{PipeEvent, Protocol, Socket};
+use std::{
+    convert::TryInto,
+    env, process,
+    sync::{
+        atomic::{AtomicUsize, Ordering},
+        Arc,
+    },
+    thread,
+    time::Duration,
+};
+
+/// Entry point of the application.
+fn main() -&gt; Result&lt;(), nng::Error&gt; {
+    // Begin by parsing the arguments to determine whether this is the
+    // subscriber or the publisher and what URL to connect with.
+    let args: Vec&lt;_&gt; = env::args().take(3).collect();
+
+    match &amp;args[..] {
+        [_, t, url] if t == "publisher" =&gt; publisher(url),
+        [_, t, url] if t == "subscriber" =&gt; subscriber(url),
+        _ =&gt; {
+            println!("Usage: pubsub publisher|subscriber &lt;url&gt;");
+            process::exit(1);
+        }
+    }
+}
+
+/// Run the publisher portion of the program.
+fn publisher(url: &amp;str) -&gt; Result&lt;(), nng::Error&gt; {
+    let s = Socket::new(Protocol::Pub0)?;
+    let count = Arc::new(AtomicUsize::new(0));
+    let count_clone = count.clone();
+
+    s.pipe_notify(move |_, ev| {
+        match ev {
+            PipeEvent::AddPost =&gt; count_clone.fetch_add(1, Ordering::Relaxed),
+            PipeEvent::RemovePost =&gt; count_clone.fetch_sub(1, Ordering::Relaxed),
+            _ =&gt; 0,
+        };
+    })?;
+
+    s.listen(url)?;
+
+    loop {
+        // Sleep for a little bit before sending the next message.
+        thread::sleep(Duration::from_secs(3));
+
+        // Load the number of subscribers and send the value across
+        let data = count.load(Ordering::Relaxed) as u64;
+        println!("PUBLISHER: SENDING {}", data);
+        s.send(data.to_le_bytes())?;
+    }
+}
+
+/// Run the subscriber portion of the program.
+fn subscriber(url: &amp;str) -&gt; Result&lt;(), nng::Error&gt; {
+    let s = Socket::new(Protocol::Sub0)?;
+    s.dial(url)?;
+
+    println!("SUBSCRIBER: SUBSCRIBING TO ALL TOPICS");
+    //let all_topics = vec![];
+    //s.set_opt::&lt;Subscribe&gt;(all_topics)?;
+
+    loop {
+        let msg = s.recv()?;
+        let subs = usize::from_le_bytes(msg[..].try_into().unwrap());
+        println!("SUBSCRIBER: THERE ARE {} SUBSCRIBERS", subs);
+    }
+}
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+cargo run --example pubsub
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">nng-rs / Rust guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAIR — Two Way Radio · pynng / Python getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/codypiersall/pynng/blob/master/examples/pair0.py">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a href="../nng-rs/">nng-rs / Rust</a><a aria-current="page" href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">pynng / Python pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pair.svg" alt=""><figcaption>pair communication topology</figcaption></figure>
+      <h2>PAIR — Two Way Radio</h2>
+      <p>PAIR connects exactly two peers, each of which can send and receive freely.</p>
+      <div class="notice"><p>pynng is an independently maintained Python binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/codypiersall/pynng/blob/master/examples/pair0.py">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">pair0.py</div><div class="content"><pre class="highlight"><code class="language-python" data-lang="python">
+"""
+The simplest, most straightforward socket is the Pair0.  It represents a
+pipe for one-to-one bidrectional communication.
+
+To demonstrate the script, run the following commands from two separate
+terminals:
+
+    python pair0.py node0 ipc:///tmp/pair0_example  # from terminal 1
+    python pair0.py node1 ipc:///tmp/pair0_example  # from terminal 2
+
+It can be fun to kill (just ^C) each node and restart it, to demonstrate how
+the sockets will automatically reconnect.
+
+"""
+
+
+import sys
+import time
+
+import pynng
+
+
+def usage():
+    """
+    print usage message and exit.
+
+    """
+    print("Usage: {} node0|node1 URL".format(sys.argv[0]))
+    sys.exit(1)
+
+
+def main():
+    if len(sys.argv) &lt; 3:
+        usage()
+    node = sys.argv[1]
+    if node not in ("node0", "node1"):
+        usage()
+    addr = sys.argv[2]
+    with pynng.Pair0(recv_timeout=100, send_timeout=100) as sock:
+        if node == "node0":
+            sock.listen(addr)
+        else:
+            sock.dial(addr)
+        while True:
+            try:
+                msg = sock.recv()
+                print("got message from", msg.decode())
+            except pynng.Timeout:
+                pass
+            time.sleep(0.5)
+            try:
+                sock.send(node.encode())
+            except pynng.Timeout:
+                pass
+
+
+if __name__ == "__main__":
+    main()
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+python pair0.py
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">pynng / Python guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

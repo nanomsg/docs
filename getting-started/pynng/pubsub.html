@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PUB / SUB — Topics and Broadcast · pynng / Python getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/codypiersall/pynng/blob/master/examples/pubsub.py">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a href="../nng-rs/">nng-rs / Rust</a><a aria-current="page" href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">pynng / Python pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pubsub.svg" alt=""><figcaption>pubsub communication topology</figcaption></figure>
+      <h2>PUB / SUB — Topics and Broadcast</h2>
+      <p>PUB / SUB broadcasts messages, while subscribers choose the topics they receive.</p>
+      <div class="notice"><p>pynng is an independently maintained Python binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/codypiersall/pynng/blob/master/examples/pubsub.py">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">pubsub.py</div><div class="content"><pre class="highlight"><code class="language-python" data-lang="python">
+"""
+This pattern is used to allow a single broadcaster to publish messages to many subscribers,
+which may choose to limit which messages they receive.
+"""
+
+import datetime
+import pynng
+import trio
+
+address = "ipc:///tmp/pubsub.ipc"
+
+
+def get_current_date():
+    return str(datetime.datetime.now())
+
+
+async def server(sock):
+    while True:
+        date = get_current_date()
+        print(f"SERVER: PUBLISHING DATE  {date}")
+        await sock.asend(date.encode())
+        await trio.sleep(1)
+
+
+async def client(name, max_msg=2):
+    with pynng.Sub0() as sock:
+        sock.subscribe("")
+        sock.dial(address)
+
+        while max_msg:
+            msg = await sock.arecv_msg()
+            print(f"CLIENT ({name}): RECEIVED  {msg.bytes.decode()}")
+            max_msg -= 1
+
+
+async def main():
+    # publisher publishes the date forever, once per second, and clients print as they
+    # receive the date
+    with pynng.Pub0(listen=address) as pub:
+        async with trio.open_nursery() as nursery:
+            nursery.start_soon(server, pub)
+            nursery.start_soon(client, "client0", 2)
+            nursery.start_soon(client, "client1", 3)
+            nursery.start_soon(client, "client2", 4)
+
+
+if __name__ == "__main__":
+    try:
+        trio.run(main)
+    except KeyboardInterrupt:
+        # that's the way the program *should* end
+        pass
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+python pubsub.py
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">pynng / Python guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PAIR — Two Way Radio · nng-rs / Rust getting started</title>
+  <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../../#protocols">Protocols</a><a aria-current="page" href="../">Get started</a><a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pair.rs">Source</a></nav>
+  </header>
+  <main class="docs-main">
+    <nav class="docs-switcher" aria-label="Choose a getting-started guide"><a href="../nng/">NNG / C</a><a href="../mangos/">mangos / Go</a><a href="../libnanomsg/">libnanomsg / C</a><a aria-current="page" href="../nng-rs/">nng-rs / Rust</a><a href="../pynng/">pynng / Python</a></nav>
+    <nav class="pattern-nav" aria-label="Pattern guides"><a href="./">Overview</a><a href="pair.html">PAIR</a><a href="pipeline.html">PUSH / PULL</a><a href="reqrep.html">REQ / REP</a><a href="pubsub.html">PUB / SUB</a><a href="survey.html">SURVEY</a><a href="bus.html">BUS</a></nav>
+    <article class="legacy-guide">
+      <p class="eyebrow">nng-rs / Rust pattern guide</p>
+      <figure class="pattern-diagram"><img src="../../assets/diagrams/pair.svg" alt=""><figcaption>pair communication topology</figcaption></figure>
+      <h2>PAIR — Two Way Radio</h2>
+      <p>PAIR connects exactly two peers, each of which can send and receive freely.</p>
+      <div class="notice"><p>nng-rs is an independently maintained Rust binding for NNG. Its maintainers and release cycle are separate from the NNG core project.</p></div>
+      <p>This example is sourced from the project’s default branch. See the <a href="https://github.com/nanomsg/nng-rs/blob/main/nng/examples/pair.rs">upstream example</a> for its current history.</p>
+      <div class="listingblock"><div class="title">pair.rs</div><div class="content"><pre class="highlight"><code class="language-rust" data-lang="rust">
+//! Pair (two way radio) example.
+//!
+//! The pair pattern is used when there is a one-to-one peer relationship. Only one peer may be
+//! connected to another peer at a time but both may speak freely.
+//!
+//! This example was derived from [this NNG example][1].
+//!
+//! [1]: https://nanomsg.org/gettingstarted/nng/pair.html
+use nng::{Error, Message, Protocol, Socket};
+use std::{env, io::Write, process, str, thread, time::Duration};
+
+/// Entry point of the application.
+pub fn main() -&gt; Result&lt;(), Error&gt; {
+    let args: Vec&lt;_&gt; = env::args().take(3).collect();
+
+    match &amp;args[..] {
+        [_, t, url] if t == "node0" =&gt; node0(url),
+        [_, t, url] if t == "node1" =&gt; node1(url),
+        _ =&gt; {
+            println!("Usage: pipeline node0|node1 &lt;URL&gt; &lt;ARG&gt; ...");
+            process::exit(1);
+        }
+    }
+}
+
+/// The listening node.
+fn node0(url: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Pair0)?;
+    s.listen(url)?;
+
+    send_recv(&amp;s, "NODE0")
+}
+
+/// The dialing node.
+fn node1(url: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    let s = Socket::new(Protocol::Pair0)?;
+    s.dial(url)?;
+
+    send_recv(&amp;s, "NODE1")
+}
+
+/// Sends and receives messages on the socket.
+fn send_recv(s: &amp;Socket, name: &amp;str) -&gt; Result&lt;(), Error&gt; {
+    loop {
+        // Attempt to reuse the message if we can.
+        let mut msg = match s.recv() {
+            Ok(m) =&gt; {
+                let partner = str::from_utf8(&amp;m).expect("invalid UTF-8 message");
+                println!("{}: RECEIVED \"{}\"", name, partner);
+
+                m
+            }
+
+            Err(Error::TimedOut) =&gt; Message::new(),
+
+            Err(e) =&gt; return Err(e),
+        };
+
+        thread::sleep(Duration::from_secs(1));
+
+        msg.clear();
+        write!(msg, "{}", name).expect("failed to write to message");
+
+        println!("{0}: SENDING \"{0}\"", name);
+        s.send(msg)?;
+    }
+}
+      </code></pre></div></div>
+      <div class="listingblock"><div class="title">Run it</div><div class="content"><pre class="highlight"><code class="language-bash" data-lang="bash">
+cargo run --example pair
+      </code></pre></div></div>
+    </article>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="./">nng-rs / Rust guide</a> · <a href="../">All getting-started guides</a></p></footer>
+</body>
+</html>
