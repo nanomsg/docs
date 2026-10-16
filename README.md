@@ -9,6 +9,11 @@ language-specific getting-started guides under `/getting-started/`:
 - `/getting-started/nng-rs/` for the independently maintained Rust bindings.
 - `/getting-started/pynng/` for the independently maintained Python bindings.
 
+The legacy `/gettingstarted/` path and its pattern pages remain as static
+redirect pages for bookmarked links. Pattern pages point to their equivalent
+libnanomsg guides. The site is hosted as static files, so these are browser
+redirects rather than HTTP status redirects.
+
 Each guide is intentionally self-contained. nng-rs and pynng are independently
 maintained bindings: do not present their APIs, releases, or support channels as
 part of the NNG core project. To add a wrapper, add a card to
