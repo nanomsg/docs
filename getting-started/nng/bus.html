@@ -36,22 +36,22 @@ sent to every directly connected peer.</p>
 
 #include &lt;nng/nng.h&gt;
 
-static int
+static nng_err
 nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
 {
         nng_msg *msg = NULL;
-        int rv;
-        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != 0) return rv;
+        nng_err rv;
+        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != NNG_OK) return rv;
         *size = nng_msg_len(msg);
         if ((*buf = nng_alloc(*size)) == NULL) { nng_msg_free(msg); return NNG_ENOMEM; }
         memcpy(*buf, nng_msg_body(msg), *size);
         nng_msg_free(msg);
-        return 0;
+        return NNG_OK;
 }
 #define nng_recv_alloc(sock, buf, size) nng_recv_alloc_((sock), (void **)(buf), (size))
 
 void
-fatal(const char *func, int rv)
+fatal(const char *func, nng_err rv)
 {
         fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
         exit(1);
@@ -61,20 +61,20 @@ int
 node(int argc, char **argv)
 {
         nng_socket sock;
-	int rv;
+	nng_err rv;
 	size_t sz;
 
-        if ((rv = nng_bus0_open(&amp;sock)) != 0) {
+        if ((rv = nng_bus0_open(&amp;sock)) != NNG_OK) {
                 fatal("nng_bus0_open", rv);
         }
-	if ((rv = nng_listen(sock, argv[2], NULL, 0)) != 0) {
+	if ((rv = nng_listen(sock, argv[2], NULL, 0)) != NNG_OK) {
                 fatal("nng_listen", rv);
         }
 
         sleep(1); // wait for peers to bind
         if (argc &gt;= 3) {
                 for (int x = 3; x &lt; argc; x++) {
-                        if ((rv = nng_dial(sock, argv[x], NULL, 0)) != 0) {
+                        if ((rv = nng_dial(sock, argv[x], NULL, 0)) != NNG_OK) {
                                 fatal("nng_dial", rv);
                         }
                 }
@@ -85,7 +85,7 @@ node(int argc, char **argv)
         // SEND
         sz = strlen(argv[1]) + 1; // '\0' too
         printf("%s: SENDING '%s' ONTO BUS\n", argv[1], argv[1]);
-        if ((rv = nng_send(sock, argv[1], sz, 0)) != 0) {
+        if ((rv = nng_send(sock, argv[1], sz, 0)) != NNG_OK) {
                 fatal("nng_send", rv);
         }
 
@@ -93,7 +93,7 @@ node(int argc, char **argv)
         for (;;) {
                 char *buf = NULL;
 		size_t sz;
-                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) !=0) {
+                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != NNG_OK) {
 			if (rv == NNG_ETIMEDOUT) {
 				fatal("nng_recv", rv);
 			}
