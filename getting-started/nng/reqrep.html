@@ -38,17 +38,17 @@ will retry if a request is not matched with a response.</p>
 
 #include &lt;nng/nng.h&gt;
 
-static int
+static nng_err
 nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
 {
         nng_msg *msg = NULL;
-        int rv;
-        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != 0) return rv;
+        nng_err rv;
+        if ((rv = nng_recvmsg(sock, &amp;msg, 0)) != NNG_OK) return rv;
         *size = nng_msg_len(msg);
         if ((*buf = nng_alloc(*size)) == NULL) { nng_msg_free(msg); return NNG_ENOMEM; }
         memcpy(*buf, nng_msg_body(msg), *size);
         nng_msg_free(msg);
-        return 0;
+        return NNG_OK;
 }
 #define nng_recv_alloc(sock, buf, size) nng_recv_alloc_((sock), (void **)(buf), (size))
 
@@ -57,7 +57,7 @@ nng_recv_alloc_(nng_socket sock, void **buf, size_t *size)
 #define DATE "DATE"
 
 void
-fatal(const char *func, int rv)
+fatal(const char *func, nng_err rv)
 {
         fprintf(stderr, "%s: %s\n", func, nng_strerror(rv));
         exit(1);
@@ -77,25 +77,25 @@ int
 node0(const char *url)
 {
         nng_socket sock;
-        int rv;
+        nng_err rv;
 
-        if ((rv = nng_rep0_open(&amp;sock)) != 0) {
+        if ((rv = nng_rep0_open(&amp;sock)) != NNG_OK) {
                 fatal("nng_rep0_open", rv);
         }
-          if ((rv = nng_listen(sock, url, NULL, 0)) != 0) {
+          if ((rv = nng_listen(sock, url, NULL, 0)) != NNG_OK) {
                 fatal("nng_listen", rv);
         }
         for (;;) {
                 char *buf = NULL;
 		size_t sz;
-                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != 0) {
+                if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != NNG_OK) {
                         fatal("nng_recv", rv);
                 }
                 if ((sz == (strlen(DATE) + 1)) &amp;&amp; (strcmp(DATE, buf) == 0)) {
                         printf("NODE0: RECEIVED DATE REQUEST\n");
                         char *d = date();
                         printf("NODE0: SENDING DATE %s\n", d);
-                        if ((rv = nng_send(sock, d, strlen(d) + 1, 0)) != 0) {
+                        if ((rv = nng_send(sock, d, strlen(d) + 1, 0)) != NNG_OK) {
                                 fatal("nng_send", rv);
                         }
                 }
@@ -107,21 +107,21 @@ int
 node1(const char *url)
 {
         nng_socket sock;
-        int rv;
+        nng_err rv;
 	size_t sz;
         char *buf = NULL;
 
-        if ((rv = nng_req0_open(&amp;sock)) != 0) {
+        if ((rv = nng_req0_open(&amp;sock)) != NNG_OK) {
                 fatal("nng_socket", rv);
         }
-        if ((rv = nng_dial(sock, url, NULL, 0)) != 0) {
+        if ((rv = nng_dial(sock, url, NULL, 0)) != NNG_OK) {
                 fatal("nng_dial", rv);
         }
         printf("NODE1: SENDING DATE REQUEST %s\n", DATE);
-        if ((rv = nng_send(sock, DATE, strlen(DATE)+1, 0)) != 0) {
+        if ((rv = nng_send(sock, DATE, strlen(DATE)+1, 0)) != NNG_OK) {
                 fatal("nng_send", rv);
         }
-        if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != 0) {
+        if ((rv = nng_recv_alloc(sock, &amp;buf, &amp;sz)) != NNG_OK) {
                 fatal("nng_recv", rv);
         }
         printf("NODE1: RECEIVED DATE %s\n", buf);  <i class="conum" data-value="1"></i><b>(1)</b>
