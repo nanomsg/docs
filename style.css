@@ -62,7 +62,10 @@ footer { max-width: 1180px; padding: 48px 28px 56px; margin: auto; display: grid
 .starter-card a { margin-top: auto; padding-top: 25px; color: var(--ocean); font-weight: 800; }
 .starter-card.nng a { color: #b1edff; }
 .pattern-list { margin: 26px 0 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-.pattern-list li { padding: 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); }
+.pattern-list li { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.pattern-list a { display: block; padding: 18px; color: var(--muted); text-decoration: none; }
+.pattern-list a:hover, .pattern-list a:focus-visible { background: var(--mist); outline: none; }
+.pattern-list a:focus-visible { box-shadow: inset 0 0 0 3px var(--sky); }
 .pattern-list strong { display: block; color: var(--ink); font-family: ui-serif, Georgia, Cambria, "Times New Roman", serif; font-size: 1.1rem; }
 .docs-switcher { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 44px; }
 .docs-switcher a { padding: 7px 12px; border: 1px solid var(--line); color: var(--ocean); font-size: .88rem; font-weight: 800; text-decoration: none; }
