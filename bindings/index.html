@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Community-maintained language bindings and wrappers for nanomsg and NNG.">
+  <title>Other language bindings — nanomsg</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="../style.css">
+</head>
+<body>
+  <header class="docs-header">
+    <a class="logo-link" href="../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
+    <nav aria-label="Primary navigation"><a href="../#protocols">Protocols</a><a href="../getting-started/">Get started</a><a aria-current="page" href="./">Other language bindings</a><a href="https://github.com/nanomsg">Source</a></nav>
+  </header>
+  <main>
+    <section class="docs-hero">
+      <p class="eyebrow">Community projects</p>
+      <h1>Other language bindings.</h1>
+      <p class="lede">Bindings and wrappers maintained by the nanomsg community. For new C applications, start with <a href="../getting-started/nng/">NNG</a>; for Go, <a href="../getting-started/mangos/">mangos</a>; for Rust, <a href="../getting-started/nng-rs/">nng-rs</a>; and for Python, <a href="../getting-started/pynng/">pynng</a>.</p>
+    </section>
+    <section class="docs-main" aria-labelledby="bindings-heading">
+      <h2 id="bindings-heading">Recommended starting points</h2>
+      <p class="bindings-intro">These implementations are the best place to begin for new applications in their respective languages.</p>
+      <div class="binding-grid binding-grid-recommended">
+        <section class="binding-language"><h2>C</h2><ul><li><a href="../getting-started/nng/">NNG</a> <span class="preferred-binding">Preferred for new C applications</span><p class="binding-note">Modern C implementation</p></li><li><a href="../getting-started/libnanomsg/">libnanomsg</a><p class="binding-note">Original C implementation and legacy API</p></li></ul></section>
+        <section class="binding-language"><h2>Go</h2><ul><li><a href="../getting-started/mangos/">mangos</a> <span class="preferred-binding">Preferred pure Go implementation</span><p class="binding-note">Current pure Go implementation</p></li></ul></section>
+        <section class="binding-language"><h2>Rust</h2><ul><li><a href="../getting-started/nng-rs/">nng-rs</a> <span class="preferred-binding">Preferred NNG binding</span><p class="binding-note">Safe, idiomatic Rust wrapper for NNG</p></li><li><a href="https://github.com/glycerine/rust-nanomsg">rust-nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Python</h2><ul><li><a href="../getting-started/pynng/">pynng</a> <span class="preferred-binding">Preferred NNG binding</span><p class="binding-note">Synchronous, asyncio, and Trio-friendly APIs</p></li><li><a href="https://github.com/tonysimpson/nanomsg-python">nanomsg-python</a></li><li><a href="https://github.com/djc/nnpy">nnpy</a></li></ul></section>
+      </div>
+      <section class="bindings-community" aria-labelledby="community-bindings-heading">
+      <h2 id="community-bindings-heading">Other language bindings</h2>
+      <p class="bindings-intro">This directory follows the language-bindings list published in the <a href="https://lib.nanomsg.org/documentation.html#_language_bindings">libnanomsg documentation</a>. These community-maintained projects have their own maintainers, support channels, and release schedules. Their inclusion here does not imply support or recommendation by the nanomsg project.</p>
+      <div class="binding-grid">
+        <section class="binding-language"><h2>C++</h2><ul><li><a href="https://github.com/achille-roussel/nanomsgxx">nanomsgxx</a></li><li><a href="https://github.com/nanomsg/cppnanomsg">cppnanomsg</a></li><li><a href="https://github.com/cwzx/nngpp">nngpp</a><p class="binding-note">NNG binding</p></li></ul></section>
+        <section class="binding-language"><h2>Clojure</h2><ul><li><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>D</h2><ul><li><a href="https://github.com/kaleidicassociates/nanomsg-wrapper">nanomsg-wrapper</a><p class="binding-note">New location</p></li></ul></section>
+        <section class="binding-language"><h2>Dylan</h2><ul><li><a href="https://github.com/dylan-foundry/nanomsg-dylan">nanomsg-dylan</a></li></ul></section>
+        <section class="binding-language"><h2>Erlang</h2><ul><li><a href="https://github.com/basho/enm">enm</a></li></ul></section>
+        <section class="binding-language"><h2>Fortran</h2><ul><li><a href="https://github.com/jshahbazi/nanofort">nanofort</a></li></ul></section>
+        <section class="binding-language"><h2>Go</h2><ul><li><a href="https://github.com/nanomsg/mangos-v2">mangos v2</a><p class="binding-note">Pure Go implementation, version 2</p></li><li><a href="https://github.com/op/go-nanomsg">go-nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Haskell</h2><ul><li><a href="http://hackage.haskell.org/package/nanomsg-haskell">nanomsg-haskell</a></li><li><a href="http://hackage.haskell.org/package/nanomsg">nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Haxe</h2><ul><li><a href="https://github.com/michelkaeser/hx-nanomsg">hx-nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>iOS</h2><ul><li><a href="https://github.com/reqshark/nanomsg.ios">nanomsg.ios</a></li><li><a href="https://github.com/swiftc-org/nanomsg">swiftc nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Java</h2><ul><li><a href="https://github.com/gonzus/jnano">jnano</a></li><li><a href="https://github.com/niwibe/jnanomsg">jnanomsg</a></li><li><a href="https://github.com/babeloff/nngjvm">nngjvm</a><p class="binding-note">NNG binding for JNA</p></li></ul></section>
+        <section class="binding-language"><h2>JavaScript (Node.js)</h2><ul><li><a href="https://github.com/nickdesaulniers/node-nanomsg">node-nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Lua</h2><ul><li><a href="https://github.com/Neopallium/lua-nanomsg">lua-nanomsg</a></li><li><a href="https://github.com/nanomsg/luajit-nanomsg">luajit-nanomsg</a></li><li><a href="https://github.com/mbalmer/luananomsg">luananomsg</a></li></ul></section>
+        <section class="binding-language"><h2>.NET</h2><ul><li><a href="https://github.com/mhowlett/NNanomsg">NNanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>OCaml</h2><ul><li><a href="https://github.com/rgrinberg/onanomsg">onanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Perl</h2><ul><li><a href="https://metacpan.org/module/NanoMsg::Raw">NanoMsg::Raw</a></li></ul></section>
+        <section class="binding-language"><h2>PHP</h2><ul><li><a href="https://github.com/mkoppanen/php-nano">php-nano</a></li></ul></section>
+        <section class="binding-language"><h2>PicoLisp</h2><ul><li><a href="https://github.com/aw/picolisp-nanomsg">picolisp-nanomsg</a><p class="binding-note">FFI bindings</p></li></ul></section>
+        <section class="binding-language"><h2>R</h2><ul><li><a href="https://github.com/mhowlett/rnanomsg">rnanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Ruby</h2><ul><li><a href="https://github.com/chuckremes/nn-core">nn-core</a><p class="binding-note">FFI bindings</p></li><li><a href="https://bitbucket.org/kschiess/nanomsg">nanomsg</a><p class="binding-note">Native bindings</p></li></ul></section>
+        <section class="binding-language"><h2>Scheme (CHICKEN)</h2><ul><li><a href="https://github.com/Adellica/chicken-nanomsg">chicken-nanomsg</a></li></ul></section>
+        <section class="binding-language"><h2>Smalltalk</h2><ul><li><a href="https://github.com/mumez/NanoStrand">NanoStrand</a></li></ul></section>
+      </div>
+      </section>
+    </section>
+  </main>
+  <footer class="docs-footer"><a class="logo-link" href="../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="../getting-started/">Get started</a> · <a href="https://github.com/nanomsg">GitHub</a></p></footer>
+</body>
+</html>

@@ -11,7 +11,7 @@
 <body>
   <header class="docs-header">
     <a class="logo-link" href="../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a>
-    <nav aria-label="Primary navigation"><a href="../#protocols">Protocols</a><a aria-current="page" href="./">Get started</a><a href="https://github.com/nanomsg">Source</a></nav>
+    <nav aria-label="Primary navigation"><a href="../#protocols">Protocols</a><a aria-current="page" href="./">Get started</a><a href="../bindings/">Other language bindings</a><a href="https://github.com/nanomsg">Source</a></nav>
   </header>
   <main>
     <section class="docs-hero">
@@ -26,14 +26,15 @@
         <article class="starter-card nng"><p class="tag">Modern C</p><h3>NNG</h3><p>For new C applications. Its modern API, asynchronous foundation, and active development make it the default choice for C.</p><a href="nng/">Start with NNG <span aria-hidden="true">→</span></a></article>
         <article class="starter-card"><p class="tag">Pure Go</p><h3>mangos</h3><p>A native Go implementation of the protocols. Use mangos v3 when you want Go’s idioms without a C dependency.</p><a href="mangos/">Start with mangos <span aria-hidden="true">→</span></a></article>
         <article class="starter-card legacy"><p class="tag">Legacy C API</p><h3>libnanomsg</h3><p>The original C implementation and API. Choose it for existing applications and bindings that depend on libnanomsg.</p><a href="libnanomsg/">Start with libnanomsg <span aria-hidden="true">→</span></a></article>
-        <article class="starter-card"><p class="tag">Independent Rust binding</p><h3>nng-rs</h3><p>A safe, idiomatic Rust wrapper for NNG. It is maintained separately from the NNG core project.</p><a href="nng-rs/">Start with nng-rs <span aria-hidden="true">→</span></a></article>
-        <article class="starter-card"><p class="tag">Independent Python binding</p><h3>pynng</h3><p>Python bindings for NNG with synchronous, asyncio, and Trio-friendly APIs. It is maintained separately from NNG core.</p><a href="pynng/">Start with pynng <span aria-hidden="true">→</span></a></article>
+        <article class="starter-card"><p class="tag">Preferred Rust binding</p><h3>nng-rs</h3><p>A safe, idiomatic Rust wrapper for NNG. It is independently maintained, with its own release lifecycle.</p><a href="nng-rs/">Start with nng-rs <span aria-hidden="true">→</span></a></article>
+        <article class="starter-card"><p class="tag">Preferred Python binding</p><h3>pynng</h3><p>Python bindings for NNG with synchronous, asyncio, and Trio-friendly APIs. It is independently maintained.</p><a href="pynng/">Start with pynng <span aria-hidden="true">→</span></a></article>
+        <article class="starter-card bindings"><p class="tag">Community bindings</p><h3>Other language bindings</h3><p>Browse community-maintained bindings and wrappers for C++, Java, JavaScript, Lua, Ruby, and more.</p><a href="../bindings/">Browse language bindings <span aria-hidden="true">→</span></a></article>
       </div>
       <h2>The same patterns, different APIs</h2>
-      <p>All three implementations use the Scalability Protocols. Once your two peers can exchange a message, choose the pattern that matches the shape of your system.</p>
+      <p>The featured implementations use the Scalability Protocols. Once your two peers can exchange a message, choose the pattern that matches the shape of your system.</p>
       <ul class="pattern-list"><li><strong>PAIR</strong>one peer to one peer</li><li><strong>PUB / SUB</strong>broadcast to interested peers</li><li><strong>REQ / REP</strong>requests and replies</li><li><strong>PUSH / PULL</strong>work distribution</li><li><strong>BUS</strong>many-to-many mesh</li><li><strong>SURVEYOR / RESPONDENT</strong>collect answers from peers</li></ul>
     </section>
   </main>
-  <footer class="docs-footer"><a class="logo-link" href="../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="https://github.com/nanomsg">GitHub</a> · <a href="nng/">NNG</a> · <a href="mangos/">mangos</a> · <a href="libnanomsg/">libnanomsg</a> · <a href="nng-rs/">nng-rs</a> · <a href="pynng/">pynng</a></p></footer>
+  <footer class="docs-footer"><a class="logo-link" href="../" aria-label="nanomsg home"><svg class="nanomsg-logo" viewBox="350 50 600 520" role="img" aria-label="nanomsg"><image href="../assets/nanomsg-logo.svg" width="1280" height="1024"></image></svg></a><p>Scalability Protocols for distributed systems.</p><p><a href="https://github.com/nanomsg">GitHub</a> · <a href="nng/">NNG</a> · <a href="mangos/">mangos</a> · <a href="libnanomsg/">libnanomsg</a> · <a href="../bindings/">Other language bindings</a></p></footer>
 </body>
 </html>
